@@ -144,8 +144,9 @@ for image in images:
 
 
 ## Find the binary selections of the images
+---
 
-Here we combine the color and gradient threshold to get the best binary thresholded image.
+Here we use the HSV color space to filter out the yellow and white line of the lane. This is done by tuning the threshold for white and yellow and combine the binary selection of white and yellow color.
 
 
 ```python
@@ -154,39 +155,7 @@ def combine_binay(img,read,display):
         img = mpimg.imread(img)        
     
     
-    img = np.copy(img)
-#     # Convert to HLS color space and separate the V channel
-#     hls = cv2.cvtColor(img, cv2.COLOR_RGB2HLS)
-#     h_channel = hls[:,:,0]
-#     l_channel = hls[:,:,1]
-#     s_channel = hls[:,:,2]
-#     sobel_kernel = 15
-#     # direction selection
-#     ang_thresh = (0.5,1)
-#     sobelx = cv2.Sobel(l_channel, cv2.CV_64F, 1, 0,ksize=sobel_kernel) # Take the derivative in x
-#     abs_sobelx = np.absolute(sobelx) # Absolute x derivative to accentuate lines away from horizontal
-#     scaled_sobelx = np.uint8(255*abs_sobelx/np.max(abs_sobelx))
-#     sobely = cv2.Sobel(l_channel, cv2.CV_64F, 0, 1,ksize=sobel_kernel) # Take the derivative in y
-#     abs_sobely = np.absolute(sobely) # Absolute y derivative to accentuate lines away from horizontal
-#     scaled_sobely = np.uint8(255*abs_sobely/np.max(abs_sobely))
-#     direction = np.arctan2(abs_sobely, abs_sobelx)
-#     direction_bi = np.zeros_like(direction)
-#     direction_bi[(direction >= ang_thresh[0]) & (direction <= ang_thresh[1])] = 1
-
-#     # Threshold x gradient
-#     sx_thresh=(80, 100)
-#     sxbinary = np.zeros_like(h_channel)
-#     sxbinary[(scaled_sobelx >= sx_thresh[0]) & (scaled_sobelx <= sx_thresh[1])] = 1
-    
-#     # Threshold color channel
-#     s_thresh=(220, 255)
-#     s_binary = np.zeros_like(s_channel)
-#     s_binary[(s_channel >= s_thresh[0]) & (s_channel <= s_thresh[1])] = 1
-
-    
-
-
-    
+    img = np.copy(img)    
     # Convert to HLS color space and separate the V channel
     hsv = cv2.cvtColor(img, cv2.COLOR_RGB2HSV)
     h_channel = hsv[:,:,0]
@@ -204,16 +173,7 @@ def combine_binay(img,read,display):
     
     white_binary = cv2.inRange(hsv,white_low,white_high)
     yellow_binary = cv2.inRange(hsv,yellow_low,yellow_high)
-#     white_binary[(h_channel >= white_low[0]) & (h_channel<= white_high[0])
-#                    & (s_channel>= white_low[1]) & (s_channel<= white_high[1])
-#                    & (v_channel>= white_low[2]) & (v_channel<= white_high[2])] = 1
-#     yellow_binary = np.zeros_like(h_channel)
-#     yellow_binary[(h_channel >= yellow_low[0]) & (h_channel<= yellow_high[0])
-#                    & (s_channel>= yellow_low[1]) & (s_channel<= yellow_high[1])
-#                    & (v_channel>= yellow_low[2]) & (v_channel<= yellow_high[2])] = 1
-#     combine_bi = np.zeros_like(h_channel)
     combine_bi = cv2.bitwise_or(white_binary,yellow_binary)
-#     combine_bi[(s_binary ==1) | (sxbinary ==1)] =1
     if display == True:
         f, (ax1, ax2) = plt.subplots(1, 2, figsize=(24,9))
         f.tight_layout()
@@ -225,6 +185,8 @@ def combine_binay(img,read,display):
     return combine_bi
 ```
 
+Here we take the image 'test1.jpg' as an example and we can see the selecte binary clearly shows the yellow lane and the white lane.
+
 
 ```python
 image = mpimg.imread('test_images/test1.jpg')
@@ -232,8 +194,10 @@ binary = combine_binay(image,False,True)
 ```
 
 
-![png](output_13_0.png)
+![png](output_14_0.png)
 
+
+The binary selection of all the test images are shown as below:
 
 
 ```python
@@ -243,30 +207,31 @@ for image in images:
 ```
 
 
-![png](output_14_0.png)
+![png](output_16_0.png)
 
 
 
-![png](output_14_1.png)
+![png](output_16_1.png)
 
 
 
-![png](output_14_2.png)
+![png](output_16_2.png)
 
 
 
-![png](output_14_3.png)
+![png](output_16_3.png)
 
 
 
-![png](output_14_4.png)
+![png](output_16_4.png)
 
 
 
-![png](output_14_5.png)
+![png](output_16_5.png)
 
 
 ## Perspective transformation
+---
 
 
 
@@ -301,6 +266,8 @@ def corners_unwarp(img,read,display,inv):
         return warped_bi, warped
 ```
 
+Images after perspective transformation can be shown as below:
+
 
 ```python
 images = glob.glob('test_images/test*.jpg')
@@ -309,32 +276,35 @@ for image in images:
 ```
 
 
-![png](output_17_0.png)
+![png](output_20_0.png)
 
 
 
-![png](output_17_1.png)
+![png](output_20_1.png)
 
 
 
-![png](output_17_2.png)
+![png](output_20_2.png)
 
 
 
-![png](output_17_3.png)
+![png](output_20_3.png)
 
 
 
-![png](output_17_4.png)
+![png](output_20_4.png)
 
 
 
-![png](output_17_5.png)
+![png](output_20_5.png)
 
 
 ## Lane finding using peaks in a histogram
 
 ### Finding the lane line with fitted curves
+---
+
+In the following part, we first find the nonzero points in the warped binary selection of test images; then we use histogram to find out the left and right end of lanes; third, we use sliding windows to find the possible left and right lane pixel; then we implement 2nd order curve fitting to find the coefficients of the lane lines; finally, we plot out the found lane lines at the original image with texts showing the curvature and offset.
 
 
 ```python
@@ -497,7 +467,10 @@ def fit_polynomial(img):
     else:
         ax2.text(100,200, 'The vehicle is at the center'
             , color='white', fontsize=10)
+    return result
 ```
+
+Images of the lane lines can be shown as below:
 
 
 ```python
@@ -508,30 +481,35 @@ for image in images:
 ```
 
 
-![png](output_21_0.png)
+![png](output_25_0.png)
 
 
 
-![png](output_21_1.png)
+![png](output_25_1.png)
 
 
 
-![png](output_21_2.png)
+![png](output_25_2.png)
 
 
 
-![png](output_21_3.png)
+![png](output_25_3.png)
 
 
 
-![png](output_21_4.png)
+![png](output_25_4.png)
 
 
 
-![png](output_21_5.png)
+![png](output_25_5.png)
 
 
 # Vedio Pipline
+---
+
+This part is more or less similar to the curve fitting part of images. However, due to the dynamic properties of video stream compared with images. Smoothing our method is used. At each time, fitted coefficents will be averaged with previous 9 interations if no absurd behavior (the Euclidean norm of the difference between current fitting and previous fitting is less than a threshold 100).
+
+To implement this functionality, a class called Line is defined as follows.
 
 
 ```python
@@ -541,113 +519,166 @@ from IPython.display import HTML
 
 
 ```python
-def vedio(img):
+# Define a class to receive the characteristics of each line detection
+class Line():
+    def __init__(self,name):
+        self.name = name
+        # norm difference of coefficient
+        self.codiff = 0
+        # was the line detected in the last iteration?
+        self.detected = False  
+        # polynomial values of the last n fits of the line
+        self.recent_fitted = []   
+        #polynomial coefficients averaged over the last n iterations
+        self.best_fit = []
+        #polynomial coefficients for the most recent fit
+        self.current_fit = [np.array([False])]  
+        #radius of curvature of the line in some units
+        self.radius_of_curvature = None 
+        #distance in meters of vehicle center from the line
+        self.line_base_pos = None 
+        #x values for detected line pixels
+        self.allx = None  
+        #y values for detected line pixels
+        self.ally = None 
+        # count the number of frames
+        self.count = 0
+        
+
+        
+        
+    def found(self,x,y):
+        norm = 100
+        if self.detected == True:
+            fit = self.best_fit
+            margin = 100
+            lane_indx = ((x > (fit[0]*(y**2)+fit[1]*y+fit[2]-margin)) & (x < (fit[0]*(y**2)+fit[1]*y+fit[2]+margin)))
+            x_new = x[lane_indx]
+            y_new = y[lane_indx]
+            if np.sum(x_new) != 0:
+                self.detected = True
+                self.count += 1  
+                self.allx = x_new
+                self.ally = y_new
+                self.current_fit = np.polyfit(y_new,x_new,2) 
+                # if the number of the frame is smaller than n = 10, we don't delete the previous one
+                if self.count == 1:
+                    self.best_fit = [self.current_fit]
+                if self.count <= 10 and self.count != 1:
+                    diff = np.subtract(self.best_fit,self.current_fit)
+                    self.codiff = np.sqrt(diff[0]**2+diff[1]**2+diff[2]**2)
+                    if self.codiff <= norm:
+                        self.recent_fitted.append(self.current_fit)
+                        self.best_fit = np.mean(self.recent_fitted, axis=0)
+                else:                    
+                    diff = np.subtract(self.best_fit,self.current_fit)
+                    self.codiff = np.sqrt(diff[0]**2+diff[1]**2+diff[2]**2)
+                    if self.codiff <= norm:
+                        self.recent_fitted = self.recent_fitted[1:] + [self.current_fit]
+                        self.best_fit = np.mean(self.recent_fitted, axis=0)
+            if np.sum(x_new) == 0:
+                self.detected = False 
+
+            
+    def blind(self,x,y,img):
+        norm = 100
+        if self.detected == False:
+            histogram = np.sum(img[img.shape[0]//2:,:], axis=0)
+            midpoint = np.int(histogram.shape[0]//2)
+            margin = 25
+            nwindows = 9
+            minipix = 50
+            window_height = np.int(img.shape[0]//nwindows)
+            if self.name == 'left':
+                base = np.argmax(histogram[:midpoint])               
+            if self.name == 'right':
+                base = np.argmax(histogram[midpoint:]) + midpoint
+            x_current = base
+            lane_inds = []
+            for window in range(nwindows):
+                win_y_low = img.shape[0] - (window+1)*window_height
+                win_y_high = img.shape[0] - window*window_height
+                win_x_low = x_current -margin
+                win_x_high = x_current + margin
+                good_inds = ((y >= win_y_low) & (y < win_y_high) & (x >= win_x_low) & (x < win_x_high)).nonzero()[0]
+                lane_inds.append(good_inds)
+                if len(lane_inds) >minipix:
+                    x_current =  np.int(np.mean(x[good_inds]))
+            lane_inds = np.concatenate(lane_inds)
+            x_new = x[lane_inds]
+            y_new = y[lane_inds]
+            if np.sum(x_new) != 0:
+                self.count += 1
+                self.detected = True
+                self.allx = x_new
+                self.ally = y_new
+                self.current_fit = np.polyfit(y_new,x_new,2)
+                
+                # if the number of the frame is smaller than n = 10, we don't delete the previous frame
+                if self.count == 1:
+                    self.best_fit = self.current_fit
+                if self.count <= 10 and self.count != 1:
+                    #print('count',self.count)
+                    diff = np.subtract(self.best_fit,self.current_fit)
+                    self.codiff = np.sqrt(diff[0]**2+diff[1]**2+diff[2]**2)
+                    if self.codiff <= norm:
+                        self.recent_fitted.append(self.current_fit)
+                        self.best_fit = np.mean(self.recent_fitted, axis=0)
+                        
+                if self.count > 10:
+                    diff = np.subtract(self.best_fit,self.current_fit)
+                    self.codiff = np.sqrt(diff[0]**2+diff[1]**2+diff[2]**2)
+                    if self.codiff <= norm:
+                        self.recent_fitted = self.recent_fitted[1:] + [self.current_fit]
+                        self.best_fit = np.mean(self.recent_fitted, axis=0)
+            if np.sum(x_new) == 0:
+                self.detected = False 
+
+        
+    def curvature(self):
+        ym_per_pix = 30./720 # meters per pixel in y dimension
+        xm_per_pix = 3.7/700 # meteres per pixel in x dimension
+        x_value = self.allx
+        y_value = self.ally
+        fit = np.polyfit(y_value*ym_per_pix, x_value*xm_per_pix, 2)
+        self.radius_of_curvature = ((1 + (2*fit[0]*np.max(y_value) + fit[1])**2)**1.5) \
+                                     /np.absolute(2*fit_cr[0])
+        return self.radius_of_curvature
+        
+```
+
+
+```python
+Left = Line('left')
+Right = Line('right')
+def video(img):
+
+    
+    ## Find the binary selection of the frame
     M_inv,binary_warped,warped = corners_unwarp(img,False,False,True)
     binary_all = combine_binay(img,False,False)
-    # Take a histogram of the bottom half of the image
-    histogram = np.sum(binary_warped[binary_warped.shape[0]//2:,:], axis=0)
-    # Create an output image to draw on and visualize the result
-    out_img = np.dstack((binary_warped, binary_warped, binary_warped))
-    # Find the peak of the left and right halves of the histogram
-    # These will be the starting point for the left and right lines
-    midpoint = np.int(histogram.shape[0]//2)
-    leftx_base = np.argmax(histogram[:midpoint])
-    rightx_base = np.argmax(histogram[midpoint:]) + midpoint
-
-    # HYPERPARAMETERS
-    # Check or not the windows
-    w_check = False
-    # Choose the number of sliding windows
-    nwindows = 9
-    # Set the width of the windows +/- margin
-    margin = 100
-    # Set minimum number of pixels found to recenter window
-    minpix = 50
-
-    # Set height of windows - based on nwindows above and image shape
-    window_height = np.int(binary_warped.shape[0]//nwindows)
-    # Identify the x and y positions of all nonzero pixels in the image
     nonzero = binary_warped.nonzero()
-    nonzeroy = np.array(nonzero[0])
-    nonzerox = np.array(nonzero[1])
-    # Current positions to be updated later for each window in nwindows
-    leftx_current = leftx_base
-    rightx_current = rightx_base
-
-    # Create empty lists to receive left and right lane pixel indices
-    left_lane_inds = []
-    right_lane_inds = []
-
-    # Step through the windows one by one
-    for window in range(nwindows):
-        # Identify window boundaries in x and y (and right and left)
-        win_y_low = binary_warped.shape[0] - (window+1)*window_height
-        win_y_high = binary_warped.shape[0] - window*window_height
-        ### TO-DO: Find the four below boundaries of the window ###
-        win_xleft_low = leftx_current - margin   # Update this
-        win_xleft_high = leftx_current + margin  # Update this
-        win_xright_low = rightx_current - margin  # Update this
-        win_xright_high = rightx_current + margin  # Update this
-        
-        if w_check == True:
-            # Draw the windows on the visualization image
-            cv2.rectangle(out_img,(win_xleft_low,win_y_low),
-            (win_xleft_high,win_y_high),(0,255,0), 2) 
-            cv2.rectangle(out_img,(win_xright_low,win_y_low),
-            (win_xright_high,win_y_high),(0,255,0), 2) 
-        
-        ### TO-DO: Identify the nonzero pixels in x and y within the window ###
-        good_left_inds = ((nonzeroy >= win_y_low) & (nonzeroy < win_y_high) & 
-        (nonzerox >= win_xleft_low) &  (nonzerox < win_xleft_high)).nonzero()[0]
-        good_right_inds = ((nonzeroy >= win_y_low) & (nonzeroy < win_y_high) & 
-        (nonzerox >= win_xright_low) &  (nonzerox < win_xright_high)).nonzero()[0]
-        
-        # Append these indices to the lists
-        left_lane_inds.append(good_left_inds)
-        right_lane_inds.append(good_right_inds)
-        
-        if len(good_left_inds) > minpix:
-            leftx_current = np.int(np.mean(nonzerox[good_left_inds]))
-        if len(good_right_inds) > minpix:
-            rightx_current = np.int(np.mean(nonzerox[good_right_inds]))
-
-    # Concatenate the arrays of indices (previously was a list of lists of pixels)
-    try:
-        left_lane_inds = np.concatenate(left_lane_inds)
-        right_lane_inds = np.concatenate(right_lane_inds)
-    except ValueError:
-        # Avoids an error if the above is not implemented fully
-        pass
-
-    # Extract left and right line pixel positions
-    leftx = nonzerox[left_lane_inds]
-    lefty = nonzeroy[left_lane_inds] 
-    rightx = nonzerox[right_lane_inds]
-    righty = nonzeroy[right_lane_inds]
+    y = np.array(nonzero[0])
+    x = np.array(nonzero[1])
     
-    dots = False
-    left_fit = np.polyfit(lefty,leftx,2)
-    right_fit = np.polyfit(righty,rightx,2)
+    ploty = np.linspace(0, 719, 720)
 
-    # Generate x and y values for plotting
-    ploty = np.linspace(0, binary_warped.shape[0]-1, binary_warped.shape[0] )
-    try:
-        left_fitx = left_fit[0]*ploty**2 + left_fit[1]*ploty + left_fit[2]
-        right_fitx = right_fit[0]*ploty**2 + right_fit[1]*ploty + right_fit[2]
-        ym_per_pix = 30/720 # meters per pixel in y dimension
-        xm_per_pix = 3.7/700 # meters per pixel in x dimension
-        y_eval = np.max(ploty)
-        y_eval = y_eval*ym_per_pix
-        left_fit_real = np.polyfit(lefty*ym_per_pix,leftx*xm_per_pix,2)
-        right_fit_real = np.polyfit(righty*ym_per_pix,rightx*xm_per_pix,2)
-        left_curverad = ((1 + (2*left_fit_real[0]*y_eval + left_fit_real[1])**2)**1.5) / np.absolute(2*left_fit_real[0])
-        right_curverad = ((1 + (2*right_fit_real[0]*y_eval + right_fit_real[1])**2)**1.5) / np.absolute(2*right_fit_real[0])
-    except TypeError:
-        # Avoids an error if `left` and `right_fit` are still none or incorrect
-        print('The function failed to fit a line!')
-        left_fitx = 1*ploty**2 + 1*ploty
-        right_fitx = 1*ploty**2 + 1*ploty
-        
+    
+    # Update the Left and Right object
+    if Left.detected == True:
+        Left.found(x,y)         
+    if Right.detected == True:
+        Right.found(x,y)      
+    if Left.detected == False:
+        Left.blind(x,y,binary_warped)      
+    if Right.detected == False:
+        Right.blind(x,y,binary_warped)
+
+    
+    left_fit = Left.best_fit
+    left_fitx = left_fit[0]*ploty**2 + left_fit[1]*ploty + left_fit[2]
+    right_fit = Right.best_fit
+    right_fitx = right_fit[0]*ploty**2 + right_fit[1]*ploty + right_fit[2]
         
     # Find the position of the vehicle
     start_ind = binary_warped.shape[0]-1
@@ -679,143 +710,27 @@ def vedio(img):
 
 
 ```python
-white_output = 'challenge_out.mp4'
+white_output = 'project_out.mp4'
 clip1 = VideoFileClip("project_video.mp4")
-white_clip = clip1.fl_image(vedio).subclip(0,5)
+white_clip = clip1.fl_image(video)
 %time white_clip.write_videofile(white_output,audio = False)
 ```
 
-    [MoviePy] >>>> Building video challenge_out.mp4
-    [MoviePy] Writing video challenge_out.mp4
+    [MoviePy] >>>> Building video project_out.mp4
+    [MoviePy] Writing video project_out.mp4
 
 
-    
-      0%|          | 0/126 [00:00<?, ?it/s][A
-      2%|▏         | 2/126 [00:00<00:13,  9.24it/s][A
-      2%|▏         | 3/126 [00:00<00:13,  9.45it/s][A
-      4%|▍         | 5/126 [00:00<00:12,  9.67it/s][A
-      5%|▍         | 6/126 [00:00<00:12,  9.54it/s][A
-      6%|▌         | 7/126 [00:00<00:12,  9.35it/s][A
-      6%|▋         | 8/126 [00:00<00:12,  9.32it/s][A
-      7%|▋         | 9/126 [00:00<00:12,  9.30it/s][A
-      8%|▊         | 10/126 [00:01<00:12,  9.40it/s][A
-      9%|▊         | 11/126 [00:01<00:12,  9.25it/s][A
-     10%|▉         | 12/126 [00:01<00:12,  9.25it/s][A
-     10%|█         | 13/126 [00:01<00:12,  9.36it/s][A
-     11%|█         | 14/126 [00:01<00:12,  9.23it/s][A
-     12%|█▏        | 15/126 [00:01<00:12,  9.24it/s][A
-     13%|█▎        | 16/126 [00:01<00:11,  9.24it/s][A
-     13%|█▎        | 17/126 [00:01<00:11,  9.15it/s][A
-     14%|█▍        | 18/126 [00:01<00:11,  9.18it/s][A
-     15%|█▌        | 19/126 [00:02<00:11,  9.30it/s][A
-     16%|█▌        | 20/126 [00:02<00:11,  9.49it/s][A
-     17%|█▋        | 21/126 [00:02<00:11,  9.43it/s][A
-     17%|█▋        | 22/126 [00:02<00:11,  9.38it/s][A
-     18%|█▊        | 23/126 [00:02<00:11,  9.24it/s][A
-     19%|█▉        | 24/126 [00:02<00:11,  9.25it/s][A
-     20%|█▉        | 25/126 [00:02<00:10,  9.25it/s][A
-     21%|██        | 26/126 [00:02<00:10,  9.36it/s][A
-     21%|██▏       | 27/126 [00:02<00:10,  9.53it/s][A
-     22%|██▏       | 28/126 [00:02<00:10,  9.25it/s][A
-     23%|██▎       | 29/126 [00:03<00:10,  9.35it/s][A
-     24%|██▍       | 30/126 [00:03<00:10,  9.33it/s][A
-     25%|██▌       | 32/126 [00:03<00:09,  9.57it/s][A
-     27%|██▋       | 34/126 [00:03<00:09,  9.81it/s][A
-     29%|██▊       | 36/126 [00:03<00:09,  9.92it/s][A
-     29%|██▉       | 37/126 [00:03<00:09,  9.61it/s][A
-     31%|███       | 39/126 [00:04<00:08,  9.78it/s][A
-     33%|███▎      | 41/126 [00:04<00:08,  9.90it/s][A
-     34%|███▍      | 43/126 [00:04<00:11,  7.04it/s][A
-     35%|███▍      | 44/126 [00:04<00:12,  6.62it/s][A
-     36%|███▌      | 45/126 [00:05<00:13,  6.11it/s][A
-     37%|███▋      | 46/126 [00:05<00:13,  5.87it/s][A
-     37%|███▋      | 47/126 [00:05<00:13,  5.86it/s][A
-     38%|███▊      | 48/126 [00:05<00:13,  5.83it/s][A
-     39%|███▉      | 49/126 [00:05<00:13,  5.73it/s][A
-     40%|███▉      | 50/126 [00:06<00:13,  5.81it/s][A
-     40%|████      | 51/126 [00:06<00:13,  5.68it/s][A
-     41%|████▏     | 52/126 [00:06<00:13,  5.66it/s][A
-     42%|████▏     | 53/126 [00:06<00:13,  5.58it/s][A
-     43%|████▎     | 54/126 [00:06<00:13,  5.40it/s][A
-     44%|████▎     | 55/126 [00:06<00:12,  5.51it/s][A
-     44%|████▍     | 56/126 [00:07<00:12,  5.39it/s][A
-     45%|████▌     | 57/126 [00:07<00:13,  5.21it/s][A
-     46%|████▌     | 58/126 [00:07<00:12,  5.40it/s][A
-     47%|████▋     | 59/126 [00:07<00:12,  5.39it/s][A
-     48%|████▊     | 60/126 [00:07<00:12,  5.29it/s][A
-     48%|████▊     | 61/126 [00:08<00:12,  5.32it/s][A
-     49%|████▉     | 62/126 [00:08<00:11,  5.39it/s][A
-     50%|█████     | 63/126 [00:08<00:11,  5.45it/s][A
-     51%|█████     | 64/126 [00:08<00:11,  5.44it/s][A
-     52%|█████▏    | 65/126 [00:08<00:11,  5.36it/s][A
-     52%|█████▏    | 66/126 [00:08<00:10,  5.53it/s][A
-     53%|█████▎    | 67/126 [00:09<00:10,  5.39it/s][A
-     54%|█████▍    | 68/126 [00:09<00:10,  5.40it/s][A
-     55%|█████▍    | 69/126 [00:09<00:10,  5.39it/s][A
-     56%|█████▌    | 70/126 [00:09<00:10,  5.46it/s][A
-     56%|█████▋    | 71/126 [00:09<00:10,  5.39it/s][A
-     57%|█████▋    | 72/126 [00:10<00:10,  5.40it/s][A
-     58%|█████▊    | 73/126 [00:10<00:10,  5.15it/s][A
-     59%|█████▊    | 74/126 [00:10<00:09,  5.27it/s][A
-     60%|█████▉    | 75/126 [00:10<00:09,  5.28it/s][A
-     60%|██████    | 76/126 [00:10<00:09,  5.19it/s][A
-     61%|██████    | 77/126 [00:11<00:09,  5.33it/s][A
-     62%|██████▏   | 78/126 [00:11<00:08,  5.37it/s][A
-     63%|██████▎   | 79/126 [00:11<00:08,  5.37it/s][A
-     63%|██████▎   | 80/126 [00:11<00:08,  5.39it/s][A
-     64%|██████▍   | 81/126 [00:11<00:08,  5.46it/s][A
-     65%|██████▌   | 82/126 [00:11<00:08,  5.49it/s][A
-     66%|██████▌   | 83/126 [00:12<00:07,  5.50it/s][A
-     67%|██████▋   | 84/126 [00:12<00:07,  5.43it/s][A
-     67%|██████▋   | 85/126 [00:12<00:07,  5.55it/s][A
-     68%|██████▊   | 86/126 [00:12<00:07,  5.42it/s][A
-     69%|██████▉   | 87/126 [00:12<00:07,  5.34it/s][A
-     70%|██████▉   | 88/126 [00:13<00:07,  5.16it/s][A
-     71%|███████   | 89/126 [00:13<00:06,  5.42it/s][A
-     71%|███████▏  | 90/126 [00:13<00:06,  5.35it/s][A
-     72%|███████▏  | 91/126 [00:13<00:06,  5.30it/s][A
-     73%|███████▎  | 92/126 [00:13<00:06,  5.49it/s][A
-     74%|███████▍  | 93/126 [00:14<00:06,  5.44it/s][A
-     75%|███████▍  | 94/126 [00:14<00:05,  5.52it/s][A
-     75%|███████▌  | 95/126 [00:14<00:05,  5.61it/s][A
-     76%|███████▌  | 96/126 [00:14<00:05,  5.59it/s][A
-     77%|███████▋  | 97/126 [00:14<00:05,  5.43it/s][A
-     78%|███████▊  | 98/126 [00:14<00:05,  5.43it/s][A
-     79%|███████▊  | 99/126 [00:15<00:04,  5.43it/s][A
-     79%|███████▉  | 100/126 [00:15<00:04,  5.43it/s][A
-     80%|████████  | 101/126 [00:15<00:04,  5.40it/s][A
-     81%|████████  | 102/126 [00:15<00:04,  5.44it/s][A
-     82%|████████▏ | 103/126 [00:15<00:04,  5.28it/s][A
-     83%|████████▎ | 104/126 [00:16<00:04,  5.33it/s][A
-     83%|████████▎ | 105/126 [00:16<00:03,  5.39it/s][A
-     84%|████████▍ | 106/126 [00:16<00:03,  5.44it/s][A
-     85%|████████▍ | 107/126 [00:16<00:03,  5.33it/s][A
-     86%|████████▌ | 108/126 [00:16<00:03,  5.53it/s][A
-     87%|████████▋ | 109/126 [00:16<00:03,  5.40it/s][A
-     87%|████████▋ | 110/126 [00:17<00:03,  5.31it/s][A
-     88%|████████▊ | 111/126 [00:17<00:02,  5.44it/s][A
-     89%|████████▉ | 112/126 [00:17<00:02,  5.23it/s][A
-     90%|████████▉ | 113/126 [00:17<00:02,  5.30it/s][A
-     90%|█████████ | 114/126 [00:17<00:02,  5.17it/s][A
-     91%|█████████▏| 115/126 [00:18<00:02,  5.38it/s][A
-     92%|█████████▏| 116/126 [00:18<00:01,  5.32it/s][A
-     93%|█████████▎| 117/126 [00:18<00:01,  5.51it/s][A
-     94%|█████████▎| 118/126 [00:18<00:01,  5.54it/s][A
-     94%|█████████▍| 119/126 [00:18<00:01,  5.44it/s][A
-     95%|█████████▌| 120/126 [00:19<00:01,  5.29it/s][A
-     96%|█████████▌| 121/126 [00:19<00:00,  5.28it/s][A
-     97%|█████████▋| 122/126 [00:19<00:00,  5.19it/s][A
-     98%|█████████▊| 123/126 [00:19<00:00,  5.38it/s][A
-     98%|█████████▊| 124/126 [00:19<00:00,  5.39it/s][A
-     99%|█████████▉| 125/126 [00:19<00:00,  5.42it/s][A
-    [A
+    100%|█████████▉| 1260/1261 [03:38<00:00,  6.03it/s]
+
 
     [MoviePy] Done.
-    [MoviePy] >>>> Video ready: challenge_out.mp4 
+    [MoviePy] >>>> Video ready: project_out.mp4 
     
-    CPU times: user 10.2 s, sys: 233 ms, total: 10.4 s
-    Wall time: 23 s
+    CPU times: user 1min 33s, sys: 2.57 s, total: 1min 35s
+    Wall time: 3min 41s
 
+
+The vedio output can be seen here.
 
 
 ```python
@@ -831,7 +746,7 @@ HTML("""
 
 
 <video width="960" height="540" controls>
-  <source src="challenge_out.mp4">
+  <source src="project_out.mp4">
 </video>
 
 
@@ -839,31 +754,6 @@ HTML("""
 
 # Discussions
 
-The lane detection pipline I developed works fine in the image finding. While in the video stream, it seems like the threshold value set for the binary selection is too strict and when the car comes to some place with limited light or the lane lines are shadowed by some obstacles (tree for example), the pipline will not work properly. To match the deadline as close as possible, I skip the part of tracking, sanity check, look-ahead filter, reset and smoothing. Since I'm a bit unfamiliar with oop, this remaining work will be continued with some more looks into the object oriented programming. 
+The lane detection pipline I developed depends highly on the road conditions and the parameters of each lane finding functions. The tuning is done by trial and error while the bad road condition (for example tree shadows that suddenly shows up) add to the difficulties of parameter tuning. 
 
-
-```python
-# Define a class to receive the characteristics of each line detection
-class Line():
-    def __init__(self):
-        # was the line detected in the last iteration?
-        self.detected = False  
-        # x values of the last n fits of the line
-        self.recent_xfitted = [] 
-        #average x values of the fitted line over the last n iterations
-        self.bestx = None     
-        #polynomial coefficients averaged over the last n iterations
-        self.best_fit = None  
-        #polynomial coefficients for the most recent fit
-        self.current_fit = [np.array([False])]  
-        #radius of curvature of the line in some units
-        self.radius_of_curvature = None 
-        #distance in meters of vehicle center from the line
-        self.line_base_pos = None 
-        #difference in fit coefficients between last and new fits
-        self.diffs = np.array([0,0,0], dtype='float') 
-        #x values for detected line pixels
-        self.allx = None  
-        #y values for detected line pixels
-        self.ally = None 
-```
+The challen
