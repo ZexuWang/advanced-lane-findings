@@ -782,7 +782,6 @@ HTML("""
 
 The lane detection pipline I developed depends highly on the road conditions and the parameters of each lane finding functions. The tuning is done by trial and error while the bad road condition (for example tree shadows that suddenly shows up) add to the difficulties of parameter tuning. The pipline will probabaly get failed when the lane lines are not as obvious as the one shown in the project vedio. For example, for roads that have been in use for long time without proper maintenance, the lane lines are quite blur and in thos cases, it will be quite hard for my pipline to work. In this case, all the variable for binary selection of images should be re-tuned. Since the pipline is quite sensitive to road conditions, a more robust way I can think of building this lane detection algorithm is to use the neural network to train the dataset.
 
-
 ```python
 
 ```
